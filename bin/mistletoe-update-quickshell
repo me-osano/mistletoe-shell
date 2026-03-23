@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Sync quickshell config from the local Mistletoe repo into ~/.config/quickshell
+# Optional env overrides:
+# - MISTLETOE_PATH: repo path (default: ${XDG_DATA_HOME:-$HOME/.local/share}/mistletoe)
+# - XDG_CONFIG_HOME: config base path
+# - NO_BACKUP=1: skip timestamped backup of existing config
+
+MISTLETOE_PATH="${MISTLETOE_PATH:-${XDG_DATA_HOME:-$HOME/.local/share}/mistletoe}"
+SOURCE_DIR="${MISTLETOE_PATH}/quickshell"
+TARGET_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell"
+BACKUP_DIR="${TARGET_DIR}.bak.$(date +%Y%m%d-%H%M%S)"
+
+echo -e "\e[32mUpdate Quickshell config\e[0m"
+echo "Source: ${SOURCE_DIR}"
+echo "Target: ${TARGET_DIR}"
+
+if [[ ! -d "$SOURCE_DIR" ]]; then
+  echo -e "\e[31mERROR:\e[0m quickshell source not found at: $SOURCE_DIR"
+  echo "Tip: set MISTLETOE_PATH or run setup.sh first."
+  exit 1
+fi
+
+if [[ -d "$TARGET_DIR" ]] && [[ -z "${NO_BACKUP:-}" ]]; then
+  echo "Backing up existing config to: $BACKUP_DIR"
+  mv "$TARGET_DIR" "$BACKUP_DIR"
+fi
+
+mkdir -p "$TARGET_DIR"
+cp -a "$SOURCE_DIR/." "$TARGET_DIR/"
+
+if [[ -f "${MISTLETOE_PATH}/VERSION" ]]; then
+  cp -a "${MISTLETOE_PATH}/VERSION" "${TARGET_DIR}/VERSION"
+fi
+
+echo -e "\e[32mDone:\e[0m quickshell config synced"
+echo "Run with: quickshell \"${TARGET_DIR}/shell.qml\""

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -e
+
+trap 'echo ""; echo -e "\033[0;31mSomething went wrong during the update!\n\nPlease review the output above carefully, correct the error, and retry the update.\n\n;mistletoe-snapshot delete' ERR
+
+if [[ $1 == "-y" ]] || mistletoe-update-confirm; then
+  mistletoe-snapshot create || [ $? -eq 127 ]
+  mistletoe-update-git
+  mistletoe-update-perform
+fi

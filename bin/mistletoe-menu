@@ -1,0 +1,574 @@
+#!/usr/bin/env bash
+
+# Launch the Mistletoe Menu or takes a parameter to jump straight to a submenu.
+
+export PATH="$HOME/.local/share/mistletoe/bin:$PATH"
+
+# Set to true when going directly to a submenu, so we can exit directly
+BACK_TO_EXIT=false
+
+back_to() {
+  local parent_menu="$1"
+
+  if [[ "$BACK_TO_EXIT" == "true" ]]; then
+    exit 0
+  elif [[ -n "$parent_menu" ]]; then
+    "$parent_menu"
+  else
+    show_main_menu
+  fi
+}
+
+menu() {
+  local prompt="$1"
+  local options="$2"
+  local extra="$3"
+  local preselect="$4"
+
+  read -r -a args <<<"$extra"
+
+  if [[ -n "$preselect" ]]; then
+    local index
+    index=$(echo -e "$options" | grep -nxF "$preselect" | cut -d: -f1)
+    if [[ -n "$index" ]]; then
+      args+=("-c" "$index")
+    fi
+  fi
+
+  echo -e "$options" | mistletoe-launch-walker --dmenu --width 295 --minheight 1 --maxheight 630 -p "$prompt…" "${args[@]}" 2>/dev/null
+}
+
+terminal() {
+  xdg-terminal-exec --app-id=org.mistletoe.terminal "$@"
+}
+
+present_terminal() {
+  mistletoe-launch-floating-terminal-with-presentation $1
+}
+
+open_in_editor() {
+  notify-send "Editing config file" "$1"
+  mistletoe-launch-editor "$1"
+}
+
+install() {
+  present_terminal "echo 'Installing $1...'; sudo pacman -S --noconfirm $2"
+}
+
+install_and_launch() {
+  present_terminal "echo 'Installing $1...'; sudo pacman -S --noconfirm $2 && setsid gtk-launch $3"
+}
+
+install_font() {
+  present_terminal "echo 'Installing $1...'; sudo pacman -S --noconfirm --needed $2 && sleep 2 && mistletoe-font-set '$3'"
+}
+
+install_terminal() {
+  present_terminal "mistletoe-install-terminal $1"
+}
+
+aur_install() {
+  present_terminal "echo 'Installing $1 from AUR...'; yay -S --noconfirm $2"
+}
+
+aur_install_and_launch() {
+  present_terminal "echo 'Installing $1 from AUR...'; yay -S --noconfirm $2 && setsid gtk-launch $3"
+}
+
+show_learn_menu() {
+  case $(menu "Learn" "  Keybindings\n  Hyprland\n󰣇  Arch\n  Neovim\n󱆃  Bash") in
+  *Keybindings*) mistletoe-menu-keybindings ;;
+  *Hyprland*) mistletoe-launch-webapp "https://wiki.hypr.land/" ;;
+  *Arch*) mistletoe-launch-webapp "https://wiki.archlinux.org/title/Main_page" ;;
+  *Bash*) mistletoe-launch-webapp "https://devhints.io/bash" ;;
+  *Neovim*) mistletoe-launch-webapp "https://www.lazyvim.org/keymaps" ;;
+  *) show_main_menu ;;
+  esac
+}
+
+show_trigger_menu() {
+  case $(menu "Trigger" "  Capture\n  Share\n󰔎  Toggle") in
+  *Capture*) show_capture_menu ;;
+  *Share*) show_share_menu ;;
+  *Toggle*) show_toggle_menu ;;
+  *) show_main_menu ;;
+  esac
+}
+
+show_capture_menu() {
+  case $(menu "Capture" "  Screenshot\n  Screenrecord\n󰃉  Color") in
+  *Screenshot*) show_screenshot_menu ;;
+  *Screenrecord*) show_screenrecord_menu ;;
+  *Color*) pkill hyprpicker || hyprpicker -a ;;
+  *) show_trigger_menu ;;
+  esac
+}
+
+show_screenshot_menu() {
+  case $(menu "Screenshot" "  Snap with Editing\n  Straight to Clipboard") in
+  *Editing*) mistletoe-cmd-screenshot smart ;;
+  *Clipboard*) mistletoe-cmd-screenshot smart clipboard ;;
+  *) show_capture_menu ;;
+  esac
+}
+
+get_webcam_list() {
+  v4l2-ctl --list-devices 2>/dev/null | while IFS= read -r line; do
+    if [[ "$line" != $'\t'* && -n "$line" ]]; then
+      local name="$line"
+      IFS= read -r device || break
+      device=$(echo "$device" | tr -d '\t' | head -1)
+      [[ -n "$device" ]] && echo "$device  $name"
+    fi
+  done
+}
+
+show_webcam_select_menu() {
+  local devices=$(get_webcam_list)
+  local count=$(echo "$devices" | grep -c . 2>/dev/null || echo 0)
+
+  if [[ -z "$devices" || "$count" -eq 0 ]]; then
+    notify-send "No webcam devices found" -u critical -t 3000
+    return 1
+  fi
+
+  if [[ "$count" -eq 1 ]]; then
+    echo "$devices" | awk '{print $1}'
+  else
+    menu "Select Webcam" "$devices" | awk '{print $1}'
+  fi
+}
+
+show_screenrecord_menu() {
+  mistletoe-cmd-screenrecord --stop-recording && exit 0
+
+  case $(menu "Screenrecord" "  With desktop audio\n  With desktop + microphone audio\n  With desktop + microphone audio + webcam") in
+  *"With desktop audio") mistletoe-cmd-screenrecord --with-desktop-audio ;;
+  *"With desktop + microphone audio") mistletoe-cmd-screenrecord --with-desktop-audio --with-microphone-audio ;;
+  *"With desktop + microphone audio + webcam")
+    local device=$(show_webcam_select_menu) || { back_to show_capture_menu; return; }
+    mistletoe-cmd-screenrecord --with-desktop-audio --with-microphone-audio --with-webcam --webcam-device="$device"
+    ;;
+  *) back_to show_capture_menu ;;
+  esac
+}
+
+show_share_menu() {
+  case $(menu "Share" "  Clipboard\n  File \n  Folder") in
+  *Clipboard*) mistletoe-cmd-share clipboard ;;
+  *File*) terminal bash -c "mistletoe-cmd-share file" ;;
+  *Folder*) terminal bash -c "mistletoe-cmd-share folder" ;;
+  *) back_to show_trigger_menu ;;
+  esac
+}
+
+show_toggle_menu() {
+  case $(menu "Toggle" "󱄄  Screensaver\n󰔎  Nightlight\n󱫖  Idle Lock\n󰍜  Top Bar") in
+  *Screensaver*) mistletoe-toggle-screensaver ;;
+  *Nightlight*) mistletoe-toggle-nightlight ;;
+  *Idle*) mistletoe-toggle-idle ;;
+  *Bar*) mistletoe-toggle-waybar ;;
+  *) show_trigger_menu ;;
+  esac
+}
+
+show_style_menu() {
+  case $(menu "Style" "󰸌  Theme\n  Font\n  Background\n  Hyprland\n󱄄  Screensaver\n  About") in
+  *Theme*) show_theme_menu ;;
+  *Font*) show_font_menu ;;
+  *Background*) mistletoe-theme-bg-next ;;
+  *Hyprland*) open_in_editor ~/.config/hypr/general.conf ;;
+  *Screensaver*) open_in_editor ~/.config/mistletoe/branding/screensaver.txt ;;
+  *About*) open_in_editor ~/.config/mistletoe/branding/about.txt ;;
+  *) show_main_menu ;;
+  esac
+}
+
+show_theme_menu() {
+  theme=$(menu "Theme" "$(mistletoe-theme-list)" "" "$(mistletoe-theme-current)")
+  if [[ "$theme" == "CNCLD" || -z "$theme" ]]; then
+    back_to show_style_menu
+  else
+    mistletoe-theme-set "$theme"
+  fi
+}
+
+show_font_menu() {
+  theme=$(menu "Font" "$(mistletoe-font-list)" "--width 350" "$(mistletoe-font-current)")
+  if [[ "$theme" == "CNCLD" || -z "$theme" ]]; then
+    back_to show_style_menu
+  else
+    mistletoe-font-set "$theme"
+  fi
+}
+
+show_setup_menu() {
+  local options="  Audio\n  Wifi\n󰂯  Bluetooth\n󱐋  Power\n󰍹  Monitors"
+  [ -f ~/.config/hypr/keybindings.conf ] && options="$options\n  Keybindings"
+  [ -f ~/.config/hypr/input.conf ] && options="$options\n  Input"
+  [ -f ~/.config/hypr/windowrules.conf ] && options="$options\n󰍹   WindowRules"
+  options="$options\n󰱔  DNS\n  Security\n  Config"
+
+  case $(menu "Setup" "$options") in
+  *Audio*) mistletoe-launch-audio ;;
+  *Wifi*) mistletoe-launch-wifi ;;
+  *Bluetooth*) mistletoe-launch-bluetooth ;;
+  *Power*) show_setup_power_menu ;;
+  *Monitors*) open_in_editor ~/.config/hypr/monitors.conf ;;
+  *Keybindings*) open_in_editor ~/.config/hypr/keybindings.conf ;;
+  *Input*) open_in_editor ~/.config/hypr/input.conf ;;
+  *WindowRules*) open_in_editor ~/.config/hypr/windowrules.conf ;;
+  *DNS*) present_terminal mistletoe-setup-dns ;;
+  *Security*) show_setup_security_menu ;;
+  *Config*) show_setup_config_menu ;;
+  *) show_main_menu ;;
+  esac
+}
+
+show_setup_power_menu() {
+  case $(menu "Power" "󱐋 Tlp\n󱐋  Power Profiles") in
+  *Tlp*) present_terminal mistletoe-setup-tlp ;;
+  *PPD*) present_terminal mistletoe-setup-ppd ;;
+  esac
+}
+
+show_setup_security_menu() {
+  case $(menu "Setup" "󰈷  Fingerprint\n  Fido2\n  Secureboot\n  Apparmor\n") in
+  *Fingerprint*) present_terminal mistletoe-setup-fingerprint ;;
+  *Fido2*) present_terminal mistletoe-setup-fido2 ;;
+  *Secureboot*) present_terminal mistletoe-setup-secureboot ;;
+  *Apparmor*) present_terminal mistletoe-setup-apparmor ;;
+  *) show_setup_menu ;;
+  esac
+}
+
+show_setup_config_menu() {
+  case $(menu "Setup" "  Bash\n  Hyprland\n  Hypridle\n  Hyprlock\n  Hyprsunset\n  Swayosd\n󰌧  Walker\n󰍜  Waybar\n󰞅  XCompose") in
+  *Bash*) open_in_editor ~/.bashrc ;;
+  *Hyprland*) open_in_editor ~/.config/hypr/hyprland.conf ;;
+  *Hypridle*) open_in_editor ~/.config/hypr/hypridle.conf && mistletoe-restart-hypridle ;;
+  *Hyprlock*) open_in_editor ~/.config/hypr/hyprlock.conf ;;
+  *Hyprsunset*) open_in_editor ~/.config/hypr/hyprsunset.conf && mistletoe-restart-hyprsunset ;;
+  *Swayosd*) open_in_editor ~/.config/swayosd/config.toml && mistletoe-restart-swayosd ;;
+  *Walker*) open_in_editor ~/.config/walker/config.toml && mistletoe-restart-walker ;;
+  *Waybar*) open_in_editor ~/.config/waybar/config.jsonc && mistletoe-restart-waybar ;;
+  *XCompose*) open_in_editor ~/.XCompose && mistletoe-restart-xcompose ;;
+  *) show_setup_menu ;;
+  esac
+}
+
+show_install_menu() {
+  case $(menu "Install" "󰣇  Package\n󰣇  AUR\n  Web App\n  TUI\n  Service\n  Style\n󰵮  Development\n  Editor\n  Terminal\n󱚤  AI\n  Gaming") in
+  *Package*) terminal mistletoe-pkg-install ;;
+  *AUR*) terminal mistletoe-pkg-aur-install ;;
+  *Web*) present_terminal mistletoe-webapp-install ;;
+  *TUI*) present_terminal mistletoe-tui-install ;;
+  *Service*) show_install_service_menu ;;
+  *Style*) show_install_style_menu ;;
+  *Development*) show_install_development_menu ;;
+  *Editor*) show_install_editor_menu ;;
+  *Terminal*) show_install_terminal_menu ;;
+  *AI*) show_install_ai_menu ;;
+  *Gaming*) show_install_gaming_menu ;;
+  *) show_main_menu ;;
+  esac
+}
+
+show_install_service_menu() {
+  case $(menu "Install" "  Dropbox\n  Tailscale\n󰟵  Bitwarden") in
+  *Dropbox*) present_terminal mistletoe-install-dropbox ;;
+  *Tailscale*) present_terminal mistletoe-install-tailscale ;;
+  *Bitwarden*) install_and_launch "Bitwarden" "bitwarden bitwarden-cli" "bitwarden" ;;
+  *) show_install_menu ;;
+  esac
+}
+
+show_install_editor_menu() {
+  case $(menu "Install" "  Neovim\n  VSCode\n  Emacs\n  Cursor\n  Zed\n  Sublime Text\n  Helix") in
+  *Neovim*) present_terminal mistletoe-install-neovim ;;
+  *VSCode*) present_terminal mistletoe-install-vscode ;;
+  *Emacs*) install "Emacs" "emacs-wayland" ;;
+  *Cursor*) install_and_launch "Cursor" "cursor-bin" "cursor" ;;
+  *Zed*) present_terminal "echo 'Installing Zed...'; sudo pacman -S zed && setsid gtk-launch dev.zed.Zed" ;;
+  *Sublime*) install_and_launch "Sublime Text" "sublime-text-4" "sublime_text" ;;
+  *Helix*) install "Helix" "helix" ;;
+  *) show_install_menu ;;
+  esac
+}
+
+show_install_terminal_menu() {
+  case $(menu "Install" "  Alacritty\n  Ghostty\n  Kitty") in
+  *Alacritty*) install_terminal "alacritty" ;;
+  *Ghostty*) install_terminal "ghostty" ;;
+  *Kitty*) install_terminal "kitty" ;;
+  *) show_install_menu ;;
+  esac
+}
+
+show_install_ai_menu() {
+  ollama_pkg=$(
+    (command -v nvidia-smi &>/dev/null && echo ollama-cuda) ||
+      (command -v rocminfo &>/dev/null && echo ollama-rocm) ||
+      echo ollama
+  )
+
+  case $(menu "Install" "  Dictation\n󱚤  Claude Code\n󱚤  Copilot CLI\n󱚤  Cursor CLI\n󱚤  Gemini\n󱚤  OpenAI Codex\n󱚤  LM Studio\n󱚤  Ollama\n󱚤  Crush") in
+  *Dictation*) present_terminal mistletoe-voxtype-install ;;
+  *Claude*) install "Claude Code" "claude-code" ;;
+  *Copilot*) install "Copilot CLI" "github-copilot-cli" ;;
+  *Cursor*) install "Cursor CLI" "cursor-cli" ;;
+  *Gemini*) install "Gemini" "gemini-cli" ;;
+  *OpenAI*) install "OpenAI Codex" "openai-codex" ;;
+  *Studio*) install "LM Studio" "lmstudio" ;;
+  *Ollama*) install "Ollama" $ollama_pkg ;;
+  *Crush*) install "Crush" "crush-bin" ;;
+  *) show_install_menu ;;
+  esac
+}
+
+show_install_gaming_menu() {
+  case $(menu "Install" "  Steam\n󰢹  NVIDIA GeForce NOW\n  RetroArch [AUR]\n󰍳  Minecraft\n󰖺  Xbox Controller [AUR]") in
+  *Steam*) present_terminal mistletoe-install-steam ;;
+  *GeForce*) present_terminal mistletoe-install-geforce-now ;;
+  *RetroArch*) aur_install_and_launch "RetroArch" "retroarch retroarch-assets libretro libretro-fbneo" "com.libretro.RetroArch.desktop" ;;
+  *Minecraft*) install_and_launch "Minecraft" "minecraft-launcher" "minecraft-launcher" ;;
+  *Xbox*) present_terminal mistletoe-install-xbox-controllers ;;
+  *) show_install_menu ;;
+  esac
+}
+
+show_install_style_menu() {
+  case $(menu "Install" "󰸌  Theme\n  Background\n  Font") in
+  *Theme*) present_terminal mistletoe-theme-install ;;
+  *Background*) mistletoe-theme-bg-install ;;
+  *Font*) show_install_font_menu ;;
+  *) show_install_menu ;;
+  esac
+}
+
+show_install_font_menu() {
+  case $(menu "Install" "  Meslo LG Mono\n  Fira Code\n Intel One Mono\n  Victor Code\n  Bistream Vera Mono\n  Iosevka" "--width 350") in
+  *Meslo*) install_font "Meslo LG Mono" "ttf-meslo-nerd" "MesloLGL Nerd Font" ;;
+  *Fira*) install_font "Fira Code" "ttf-firacode-nerd" "FiraCode Nerd Font" ;;
+  *Intel*) install_font "Intel One Mono" "ttf-intel-one-mono" "Intel One Mono Font" ;;
+  *Victor*) install_font "Victor Code" "ttf-victor-mono-nerd" "VictorMono Nerd Font" ;;
+  *Bistream*) install_font "Bistream Vera Code" "ttf-bitstream-vera-mono-nerd" "BitstromWera Nerd Font" ;;
+  *Iosevka*) install_font "Iosevka" "ttf-iosevka-nerd" "Iosevka Nerd Font Mono" ;;
+  *) show_install_menu ;;
+  esac
+}
+
+show_install_development_menu() {
+  case $(menu "Install" "󰫏  Ruby on Rails\n  Docker DB\n  JavaScript\n  Go\n  PHP\n  Python\n  Elixir\n  Zig\n  Rust\n  Java\n  .NET\n  OCaml\n  Clojure") in
+  *Rails*) present_terminal "mistletoe-install-dev-env ruby" ;;
+  *Docker*) present_terminal mistletoe-install-docker-dbs ;;
+  *JavaScript*) show_install_javascript_menu ;;
+  *Go*) present_terminal "mistletoe-install-dev-env go" ;;
+  *PHP*) show_install_php_menu ;;
+  *Python*) present_terminal "mistletoe-install-dev-env python" ;;
+  *Elixir*) show_install_elixir_menu ;;
+  *Zig*) present_terminal "mistletoe-install-dev-env zig" ;;
+  *Rust*) present_terminal "mistletoe-install-dev-env rust" ;;
+  *Java*) present_terminal "mistletoe-install-dev-env java" ;;
+  *NET*) present_terminal "mistletoe-install-dev-env dotnet" ;;
+  *OCaml*) present_terminal "mistletoe-install-dev-env ocaml" ;;
+  *Clojure*) present_terminal "mistletoe-install-dev-env clojure" ;;
+  *) show_install_menu ;;
+  esac
+}
+
+show_install_javascript_menu() {
+  case $(menu "Install" "  Node.js\n  Bun\n  Deno") in
+  *Node*) present_terminal "mistletoe-install-dev-env node" ;;
+  *Bun*) present_terminal "mistletoe-install-dev-env bun" ;;
+  *Deno*) present_terminal "mistletoe-install-dev-env deno" ;;
+  *) show_install_development_menu ;;
+  esac
+}
+
+show_install_php_menu() {
+  case $(menu "Install" "  PHP\n  Laravel\n  Symfony") in
+  *PHP*) present_terminal "mistletoe-install-dev-env php" ;;
+  *Laravel*) present_terminal "mistletoe-install-dev-env laravel" ;;
+  *Symfony*) present_terminal "mistletoe-install-dev-env symfony" ;;
+  *) show_install_development_menu ;;
+  esac
+}
+
+show_install_elixir_menu() {
+  case $(menu "Install" "  Elixir\n  Phoenix") in
+  *Elixir*) present_terminal "mistletoe-install-dev-env elixir" ;;
+  *Phoenix*) present_terminal "mistletoe-install-dev-env phoenix" ;;
+  *) show_install_development_menu ;;
+  esac
+}
+
+show_remove_menu() {
+  case $(menu "Remove" "󰣇  Package\n  Web App\n  TUI\n󰵮  Development\n󰏓  Preinstalls\n  Dictation\n󰸌  Theme\n󰍲  Fingerprint\n  Fido2") in
+  *Package*) terminal mistletoe-pkg-remove ;;
+  *Web*) present_terminal mistletoe-webapp-remove ;;
+  *TUI*) present_terminal mistletoe-tui-remove ;;
+  *Development*) show_remove_development_menu ;;
+  *Preinstalls*) present_terminal mistletoe-remove-all ;;
+  *Dictation*) present_terminal mistletoe-voxtype-remove ;;
+  *Theme*) present_terminal mistletoe-theme-remove ;;
+  *Fingerprint*) present_terminal "mistletoe-setup-fingerprint --remove" ;;
+  *Fido2*) present_terminal "mistletoe-setup-fido2 --remove" ;;
+  *Secureboot*) present_terminal "mistletoe-setup-secureboot --remove" ;;
+  *Apparmor*) present_terminal "mistletoe-setup-apparmor --remove" ;;
+  *) show_main_menu ;;
+  esac
+}
+
+show_remove_development_menu() {
+  case $(menu "Remove" "󰫏  Ruby on Rails\n  JavaScript\n  Go\n  PHP\n  Python\n  Elixir\n  Zig\n  Rust\n  Java\n  .NET\n  OCaml\n  Clojure") in
+  *Rails*) present_terminal "mistletoe-remove-dev-env ruby" ;;
+  *JavaScript*) show_remove_javascript_menu ;;
+  *Go*) present_terminal "mistletoe-remove-dev-env go" ;;
+  *PHP*) show_remove_php_menu ;;
+  *Python*) present_terminal "mistletoe-remove-dev-env python" ;;
+  *Elixir*) show_remove_elixir_menu ;;
+  *Zig*) present_terminal "mistletoe-remove-dev-env zig" ;;
+  *Rust*) present_terminal "mistletoe-remove-dev-env rust" ;;
+  *Java*) present_terminal "mistletoe-remove-dev-env java" ;;
+  *NET*) present_terminal "mistletoe-remove-dev-env dotnet" ;;
+  *OCaml*) present_terminal "mistletoe-remove-dev-env ocaml" ;;
+  *Clojure*) present_terminal "mistletoe-remove-dev-env clojure" ;;
+  *) show_remove_menu ;;
+  esac
+}
+
+show_remove_javascript_menu() {
+  case $(menu "Remove" "  Node.js\n  Bun\n  Deno") in
+  *Node*) present_terminal "mistletoe-remove-dev-env node" ;;
+  *Bun*) present_terminal "mistletoe-remove-dev-env bun" ;;
+  *Deno*) present_terminal "mistletoe-remove-dev-env deno" ;;
+  *) show_remove_development_menu ;;
+  esac
+}
+
+show_remove_php_menu() {
+  case $(menu "Remove" "  PHP\n  Laravel\n  Symfony") in
+  *PHP*) present_terminal "mistletoe-remove-dev-env php" ;;
+  *Laravel*) present_terminal "mistletoe-remove-dev-env laravel" ;;
+  *Symfony*) present_terminal "mistletoe-remove-dev-env symfony" ;;
+  *) show_remove_development_menu ;;
+  esac
+}
+
+show_remove_elixir_menu() {
+  case $(menu "Remove" "  Elixir\n  Phoenix") in
+  *Elixir*) present_terminal "mistletoe-remove-dev-env elixir" ;;
+  *Phoenix*) present_terminal "mistletoe-remove-dev-env phoenix" ;;
+  *) show_remove_development_menu ;;
+  esac
+}
+
+show_update_menu() {
+  case $(menu "Update" "  Mistletoe\n  Config\n󰸌  Extra Themes\n  Process\n󰇅  Hardware\n  Firmware\n  Password\n  Timezone\n  Time") in
+  *Mistletoe*) present_terminal mistletoe-update ;;
+  *Config*) show_update_config_menu ;;
+  *Themes*) present_terminal mistletoe-theme-update ;;
+  *Process*) show_update_process_menu ;;
+  *Hardware*) show_update_hardware_menu ;;
+  *Firmware*) present_terminal mistletoe-update-firmware ;;
+  *Timezone*) present_terminal mistletoe-tz-select ;;
+  *Time*) present_terminal mistletoe-update-time ;;
+  *Password*) show_update_password_menu ;;
+  *) show_main_menu ;;
+  esac
+}
+
+show_update_process_menu() {
+  case $(menu "Restart" "  Hypridle\n  Hyprsunset\n  Swayosd\n󰌧  Walker\n󰍜  Waybar") in
+  *Hypridle*) mistletoe-restart-hypridle ;;
+  *Hyprsunset*) mistletoe-restart-hyprsunset ;;
+  *Swayosd*) mistletoe-restart-swayosd ;;
+  *Walker*) mistletoe-restart-walker ;;
+  *Waybar*) mistletoe-restart-waybar ;;
+  *) show_update_menu ;;
+  esac
+}
+
+show_update_config_menu() {
+  case $(menu "Use default config" "  Hyprland\n  Hypridle\n  Hyprlock\n  Hyprsunset\n  Swayosd\n󰌧  Walker\n󰍜  Waybar") in
+  *Hyprland*) present_terminal mistletoe-refresh-hyprland ;;
+  *Hypridle*) present_terminal mistletoe-refresh-hypridle ;;
+  *Hyprlock*) present_terminal mistletoe-refresh-hyprlock ;;
+  *Hyprsunset*) present_terminal mistletoe-refresh-hyprsunset ;;
+  *Swayosd*) present_terminal mistletoe-refresh-swayosd ;;
+  *Walker*) present_terminal mistletoe-refresh-walker ;;
+  *Waybar*) present_terminal mistletoe-refresh-waybar ;;
+  *) show_update_menu ;;
+  esac
+}
+
+show_update_hardware_menu() {
+  case $(menu "Restart" "  Audio\n󱚾  Wi-Fi\n󰂯  Bluetooth") in
+  *Audio*) present_terminal mistletoe-restart-pipewire ;;
+  *Wi-Fi*) present_terminal mistletoe-restart-wifi ;;
+  *Bluetooth*) present_terminal mistletoe-restart-bluetooth ;;
+  *) show_update_menu ;;
+  esac
+}
+
+show_update_password_menu() {
+  case $(menu "Update Password" "  Drive Encryption\n  User") in
+  *Drive*) present_terminal mistletoe-drive-set-password ;;
+  *User*) present_terminal passwd ;;
+  *) show_update_menu ;;
+  esac
+}
+
+show_about() {
+  mistletoe-launch-about
+}
+
+show_system_menu() {
+  local options="  Lock\n󱄄  Screensaver"
+  [ -f ~/.local/state/mistletoe/toggles/suspend-on ] && options="$options\n󰒲  Suspend"
+  mistletoe-hibernation-available && options="$options\n󰤁  Hibernate"
+  options="$options\n󰜉  Reboot\n󰐥  Shutdown"
+
+  case $(menu "System" "$options") in
+  *Lock*) mistletoe-lock-screen ;;
+  *Screensaver*) mistletoe-launch-screensaver force ;;
+  *Suspend*) systemctl suspend ;;
+  *Hibernate*) systemctl hibernate ;;
+  *Reboot*) mistletoe-cmd-reboot ;;
+  *Shutdown*) mistletoe-cmd-shutdown ;;
+  *) back_to show_main_menu ;;
+  esac
+}
+
+show_main_menu() {
+  go_to_menu "$(menu "Go" "󰀻  Apps\n󰧑  Learn\n󱓞  Trigger\n  Style\n  Setup\n󰉉  Install\n󰭌  Remove\n  Update\n  About\n  System")"
+}
+
+go_to_menu() {
+  case "${1,,}" in
+  *apps*) walker -p "Launch…" ;;
+  *learn*) show_learn_menu ;;
+  *trigger*) show_trigger_menu ;;
+  *share*) show_share_menu ;;
+  *capture*) show_capture_menu ;;
+  *style*) show_style_menu ;;
+  *theme*) show_theme_menu ;;
+  *screenshot*) show_screenshot_menu ;;
+  *screenrecord*) show_screenrecord_menu ;;
+  *setup*) show_setup_menu ;;
+  *power*) show_setup_power_menu ;;
+  *install*) show_install_menu ;;
+  *remove*) show_remove_menu ;;
+  *update*) show_update_menu ;;
+  *about*) show_about ;;
+  *system*) show_system_menu ;;
+  esac
+}
+
+if [[ -n "$1" ]]; then
+  BACK_TO_EXIT=true
+  go_to_menu "$1"
+else
+  show_main_menu
+fi

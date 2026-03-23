@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Capture update logs
+exec > >(tee "/tmp/mistletoe-update.log") 2>&1
+
+# Perform all update steps
+mistletoe-update-time
+mistletoe-update-keyring
+mistletoe-update-available-reset
+mistletoe-update-system-pkgs
+mistletoe-update-quickshell
+mistletoe-migrate
+mistletoe-update-aur-pkgs
+mistletoe-update-orphan-pkgs
+mistletoe-hook post-update
+
+mistletoe-update-analyze-logs
+
+mistletoe-update-restart
