@@ -2,6 +2,17 @@
 
 A beautiful, minimal Wayland shell built on [Quickshell](https://quickshell.outfoxxed.me/) (Qt/QML).
 
+```
+████        ███╗█████████╗█████████╗█████████╗███╗      █████████╗█████████╗█████████╗█████████╗
+█████     █████║   ███╔══╝███╔═════╝   ███╔══╝███║      ███╔═════╝   ███╔══╝███╔══███║███╔═════╝
+██████   ██████║   ███║   ███║         ███║   ███║      ███║         ███║   ███║  ███║███║
+███║███ ███║███║   ███║   █████████╗   ███║   ███║      █████████╗   ███║   ███║  ███║█████████╗
+███║ █████║ ███║   ███║         ███║   ███║   ███║      ███╔═════╝   ███║   ███║  ███║███╔═════╝
+███║  ███║  ███║   ███║         ███║   ███║   ███║      ███║         ███║   ███║  ███║███║
+███║  ╚══╝  ███║█████████╗█████████║   ███║   █████████╗█████████╗   ███║   █████████║█████████╗
+╚══╝        ╚══╝╚════════╝╚════════╝   ╚══╝   ╚════════╝╚════════╝   ╚══╝   ╚════════╝╚════════╝
+```
+
 ## ✨ Features
 
 - 🪟 Native support for Niri, Hyprland, Sway, Scroll, Labwc, and MangoWC
@@ -26,11 +37,11 @@ A beautiful, minimal Wayland shell built on [Quickshell](https://quickshell.outf
 
 ## 🧱 Prerequisites
 
-- `Arch Linux`: Base operating system and package ecosystem used by Mistletoe scripts (`pacman`, service paths, tooling assumptions).
+- `Arch Linux`: Base operating system and package ecosystem used by Mistletoe scripts
 - `Niri`: Wayland compositor/window manager targeted by default workflow and keybindings.
 - `btrfs`: Filesystem used for snapshot-capable system state management.
 - `snapper`: Snapshot manager (commonly paired with `btrfs`) for creating/restoring rollback points.
-- `limine`: Bootloader used in some setups; can be integrated with snapshot/rollback boot entries depending on your configuration.
+- `limine`: Bootloader integrated with snapshot/rollback boot entries.
 
 Required for the default workflow: `Arch Linux`, `Niri`, `Quickshell`.
 
