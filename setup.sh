@@ -11,8 +11,6 @@ PKGS=(
   quickshell
   qt6-wayland
   qt6-declarative
-  qt6-quickcontrols2
-  qt6-graphicaleffects
   qt6-tools
   wl-clipboard
   brightnessctl
@@ -21,7 +19,6 @@ PKGS=(
   power-profiles-daemon
   cava
   cliphist
-  gum
   git
 )
 
@@ -30,7 +27,7 @@ SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Quickshell's native config location — QML entry point lands directly here
 INSTALL_PREFIX="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell"
-QML_ENTRY="${INSTALL_PREFIX}/shell.qml"
+QML_ENTRY="${INSTALL_PREFIX}"
 
 # Launcher goes on the standard XDG bin path
 BIN_DIR="${HOME}/.local/bin"
@@ -288,7 +285,7 @@ create_launcher() {
   mkdir -p "$BIN_DIR"
   tee "$LAUNCHER_PATH" > /dev/null <<EOF
 #!/usr/bin/env bash
-exec quickshell "${QML_ENTRY}" "\$@"
+exec qs -c "${QML_ENTRY}" "\$@"
 EOF
   chmod +x "$LAUNCHER_PATH"
   success "Launcher created at $LAUNCHER_PATH"
@@ -325,6 +322,8 @@ LAUNCHEREOF
 # ══════════════════════════════════════════════════════════════════════════════
 
 banner
+
+sudo pacman -S --needed --noconfirm gum
 sync_repo_source
 
 section "Environment"
