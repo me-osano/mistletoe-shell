@@ -16,7 +16,7 @@ case "$APP_NAME" in
 kitty)
     KITTY_CONF="$HOME/.config/kitty/kitty.conf"
     if [ -w "$KITTY_CONF" ]; then
-        kitty +kitten themes --reload-in=all nocturnal
+        kitty +kitten themes --reload-in=all mistletoe
     else
         kitty +runpy "from kitty.utils import *; reload_conf_in_all_kitties()"
     fi
@@ -26,15 +26,15 @@ ghostty)
     CONFIG_FILE="$HOME/.config/ghostty/config"
     # Check if the config file exists before trying to modify it.
     if [ -f "$CONFIG_FILE" ]; then
-        # Check if theme is already set to nocturnal (flexible spacing)
-        if grep -qE "^theme\s*=\s*nocturnal$" "$CONFIG_FILE"; then
+        # Check if theme is already set to mistletoe (flexible spacing)
+        if grep -qE "^theme\s*=\s*mistletoe$" "$CONFIG_FILE"; then
             : # Already correct
         elif grep -qE "^theme\s*=" "$CONFIG_FILE"; then
             # Replace existing theme line in-place
-            sed -i -E 's/^theme\s*=.*/theme = nocturnal/' "$CONFIG_FILE"
+            sed -i -E 's/^theme\s*=.*/theme = mistletoe/' "$CONFIG_FILE"
         else
             # Add the new theme line to the end of the file
-            echo "theme = nocturnal" >>"$CONFIG_FILE"
+            echo "theme = mistletoe" >>"$CONFIG_FILE"
         fi
         # Only signal if ghostty is running
         pgrep -f ghostty >/dev/null && pkill -SIGUSR2 ghostty || true
@@ -51,22 +51,22 @@ foot)
     if [ ! -f "$CONFIG_FILE" ]; then
         # Create the config directory if it doesn't exist
         mkdir -p "$(dirname "$CONFIG_FILE")"
-        # Create the config file with the nocturnal theme
+        # Create the config file with the mistletoe theme
         cat >"$CONFIG_FILE" <<'EOF'
 [main]
-include=~/.config/foot/themes/nocturnal
+include=~/.config/foot/themes/mistletoe
 EOF
     else
-        # Check if theme is already set to nocturnal
-        if ! grep -q "include.*nocturnal" "$CONFIG_FILE"; then
+        # Check if theme is already set to mistletoe
+        if ! grep -q "include.*mistletoe" "$CONFIG_FILE"; then
             # Remove any existing theme include line to prevent duplicates.
             sed -i '/include=.*themes/d' "$CONFIG_FILE"
             if grep -q '^\[main\]' "$CONFIG_FILE"; then
                 # Insert the include line after the existing [main] section header
-                sed -i '/^\[main\]/a include=~/.config/foot/themes/nocturnal' "$CONFIG_FILE"
+                sed -i '/^\[main\]/a include=~/.config/foot/themes/mistletoe' "$CONFIG_FILE"
             else
                 # If [main] doesn't exist, create it at the beginning with the include
-                sed -i '1i [main]\ninclude=~/.config/foot/themes/nocturnal\n' "$CONFIG_FILE"
+                sed -i '1i [main]\ninclude=~/.config/foot/themes/mistletoe\n' "$CONFIG_FILE"
             fi
         fi
     fi
@@ -74,29 +74,29 @@ EOF
 
 alacritty)
     CONFIG_FILE="$HOME/.config/alacritty/alacritty.toml"
-    NEW_THEME_PATH='~/.config/alacritty/themes/nocturnal.toml'
+    NEW_THEME_PATH='~/.config/alacritty/themes/mistletoe.toml'
 
     # Check if the config file exists, create it if it doesn't.
     if [ ! -f "$CONFIG_FILE" ]; then
         # Create the config directory if it doesn't exist
         mkdir -p "$(dirname "$CONFIG_FILE")"
-        # Create the config file with the nocturnal theme import
+        # Create the config file with the mistletoe theme import
         cat >"$CONFIG_FILE" <<'EOF'
 [general]
 import = [
-    "~/.config/alacritty/themes/nocturnal.toml"
+    "~/.config/alacritty/themes/mistletoe.toml"
 ]
 EOF
     else
-        # Check if nocturnal theme is already imported (any path variant)
-        if grep -q 'nocturnal\.toml' "$CONFIG_FILE"; then
+        # Check if mistletoe theme is already imported (any path variant)
+        if grep -q 'mistletoe\.toml' "$CONFIG_FILE"; then
             # Update old relative path to new absolute path if needed
-            if grep -q '"themes/nocturnal.toml"' "$CONFIG_FILE"; then
-                sed -i 's|"themes/nocturnal.toml"|"'"$NEW_THEME_PATH"'"|g' "$CONFIG_FILE"
+            if grep -q '"themes/mistletoe.toml"' "$CONFIG_FILE"; then
+                sed -i 's|"themes/mistletoe.toml"|"'"$NEW_THEME_PATH"'"|g' "$CONFIG_FILE"
             fi
-            # Already has nocturnal import with correct path, nothing to do
+            # Already has mistletoe import with correct path, nothing to do
         else
-            # No nocturnal import found, add it
+            # No mistletoe import found, add it
             if grep -q '^\[general\]' "$CONFIG_FILE"; then
                 # Check if import line already exists under [general]
                 if grep -q '^import\s*=' "$CONFIG_FILE"; then
@@ -116,17 +116,17 @@ EOF
 
 wezterm)
     CONFIG_FILE="$HOME/.config/wezterm/wezterm.lua"
-    WEZTERM_SCHEME_LINE='config.color_scheme = "Nocturnal"'
+    WEZTERM_SCHEME_LINE='config.color_scheme = "Mistletoe"'
 
     # Check if the config file exists.
     if [ -f "$CONFIG_FILE" ]; then
 
-        # Check if theme is already set to Nocturnal (matches 'Nocturnal' or "Nocturnal")
-        if ! grep -q "^\s*config\.color_scheme\s*=\s*['\"]Nocturnal['\"]\s*" "$CONFIG_FILE"; then
-            # Not set to Nocturnal. Check if *any* color_scheme line exists.
+        # Check if theme is already set to Mistletoe (matches 'Mistletoe' or "Mistletoe")
+        if ! grep -q "^\s*config\.color_scheme\s*=\s*['\"]Mistletoe['\"]\s*" "$CONFIG_FILE"; then
+            # Not set to Mistletoe. Check if *any* color_scheme line exists.
             if grep -q '^\s*config\.color_scheme\s*=' "$CONFIG_FILE"; then
                 # It exists, so we replace it with our desired line.
-                sed -i "s|^\(\s*config\.color_scheme\s*=\s*\).*$|\1\"Nocturnal\"|" "$CONFIG_FILE"
+                sed -i "s|^\(\s*config\.color_scheme\s*=\s*\).*$|\1\"Mistletoe\"|" "$CONFIG_FILE"
             else
                 # It doesn't exist, so we add it before the 'return config' line.
                 if grep -q '^\s*return\s*config' "$CONFIG_FILE"; then
@@ -155,20 +155,20 @@ fuzzel)
     if [ ! -f "$CONFIG_FILE" ]; then
         # Create the config directory if it doesn't exist
         mkdir -p "$(dirname "$CONFIG_FILE")"
-        # Create the config file with the nocturnal theme
+        # Create the config file with the mistletoe theme
         cat >"$CONFIG_FILE" <<'EOF'
-include=~/.config/fuzzel/themes/nocturnal
+include=~/.config/fuzzel/themes/mistletoe
 EOF
     else
-        # Check if theme is already set to nocturnal
-        if grep -q "^include=~/.config/fuzzel/themes/nocturnal$" "$CONFIG_FILE"; then
+        # Check if theme is already set to mistletoe
+        if grep -q "^include=~/.config/fuzzel/themes/mistletoe$" "$CONFIG_FILE"; then
             : # Already correct
         elif grep -q "^include=.*themes" "$CONFIG_FILE"; then
             # Replace existing theme include line in-place
-            sed -i 's|^include=.*themes.*|include=~/.config/fuzzel/themes/nocturnal|' "$CONFIG_FILE"
+            sed -i 's|^include=.*themes.*|include=~/.config/fuzzel/themes/mistletoe|' "$CONFIG_FILE"
         else
             # Add the new theme include line
-            echo "include=~/.config/fuzzel/themes/nocturnal" >>"$CONFIG_FILE"
+            echo "include=~/.config/fuzzel/themes/mistletoe" >>"$CONFIG_FILE"
         fi
     fi
     ;;
@@ -178,14 +178,14 @@ walker)
 
     # Check if the config file exists.
     if [ -f "$CONFIG_FILE" ]; then
-        # Check if theme is already set to nocturnal (flexible spacing)
-        if grep -qE '^theme\s*=\s*"nocturnal"' "$CONFIG_FILE"; then
+        # Check if theme is already set to mistletoe (flexible spacing)
+        if grep -qE '^theme\s*=\s*"mistletoe"' "$CONFIG_FILE"; then
             : # Already correct
         elif grep -qE '^theme\s*=' "$CONFIG_FILE"; then
             # Replace existing theme line in-place
-            sed -i -E 's/^theme\s*=.*/theme = "nocturnal"/' "$CONFIG_FILE"
+            sed -i -E 's/^theme\s*=.*/theme = "mistletoe"/' "$CONFIG_FILE"
         else
-            echo 'theme = "nocturnal"' >>"$CONFIG_FILE"
+            echo 'theme = "mistletoe"' >>"$CONFIG_FILE"
         fi
     else
         echo "Error: walker config file not found at $CONFIG_FILE" >&2
@@ -195,7 +195,7 @@ walker)
 
 vicinae)
     # Apply the theme
-    vicinae theme set nocturnal
+    vicinae theme set mistletoe
     ;;
 
 pywalfox)
@@ -219,23 +219,23 @@ cava)
     if [ -f "$CONFIG_FILE" ]; then
         # Check if [color] section exists
         if grep -q '^\[color\]' "$CONFIG_FILE"; then
-            # Check if theme is already set to nocturnal under [color] (flexible spacing)
-            if sed -n '/^\[color\]/,/^\[/p' "$CONFIG_FILE" | grep -qE '^theme\s*=\s*"nocturnal"'; then
+            # Check if theme is already set to mistletoe under [color] (flexible spacing)
+            if sed -n '/^\[color\]/,/^\[/p' "$CONFIG_FILE" | grep -qE '^theme\s*=\s*"mistletoe"'; then
                 : # Already correct
             elif sed -n '/^\[color\]/,/^\[/p' "$CONFIG_FILE" | grep -qE '^theme\s*='; then
                 # Replace existing theme line under [color]
-                sed -i -E '/^\[color\]/,/^\[/{s/^theme\s*=.*/theme = "nocturnal"/}' "$CONFIG_FILE"
+                sed -i -E '/^\[color\]/,/^\[/{s/^theme\s*=.*/theme = "mistletoe"/}' "$CONFIG_FILE"
                 THEME_MODIFIED=true
             else
                 # Add theme line after [color]
-                sed -i '/^\[color\]/a theme = "nocturnal"' "$CONFIG_FILE"
+                sed -i '/^\[color\]/a theme = "mistletoe"' "$CONFIG_FILE"
                 THEME_MODIFIED=true
             fi
         else
             # Add [color] section with theme at the end of file
             echo "" >>"$CONFIG_FILE"
             echo "[color]" >>"$CONFIG_FILE"
-            echo 'theme = "nocturnal"' >>"$CONFIG_FILE"
+            echo 'theme = "mistletoe"' >>"$CONFIG_FILE"
             THEME_MODIFIED=true
         fi
 
@@ -261,29 +261,29 @@ yazi)
     if [ ! -f "$CONFIG_FILE" ]; then
         cat >"$CONFIG_FILE" <<'EOF'
 [flavor]
-dark  = "nocturnal"
-light = "nocturnal"
+dark  = "mistletoe"
+light = "mistletoe"
 EOF
     else
         # Check if [flavor] section exists
         if grep -q '^\[flavor\]' "$CONFIG_FILE"; then
             # Update or add dark/light lines under [flavor]
             if sed -n '/^\[flavor\]/,/^\[/p' "$CONFIG_FILE" | grep -q '^dark\s*='; then
-                sed -i '/^\[flavor\]/,/^\[/{s/^dark\s*=.*/dark  = "nocturnal"/}' "$CONFIG_FILE"
+                sed -i '/^\[flavor\]/,/^\[/{s/^dark\s*=.*/dark  = "mistletoe"/}' "$CONFIG_FILE"
             else
-                sed -i '/^\[flavor\]/a dark  = "nocturnal"' "$CONFIG_FILE"
+                sed -i '/^\[flavor\]/a dark  = "mistletoe"' "$CONFIG_FILE"
             fi
             if sed -n '/^\[flavor\]/,/^\[/p' "$CONFIG_FILE" | grep -q '^light\s*='; then
-                sed -i '/^\[flavor\]/,/^\[/{s/^light\s*=.*/light = "nocturnal"/}' "$CONFIG_FILE"
+                sed -i '/^\[flavor\]/,/^\[/{s/^light\s*=.*/light = "mistletoe"/}' "$CONFIG_FILE"
             else
-                sed -i '/^\[flavor\]/,/^dark/a light = "nocturnal"' "$CONFIG_FILE"
+                sed -i '/^\[flavor\]/,/^dark/a light = "mistletoe"' "$CONFIG_FILE"
             fi
         else
             # Add [flavor] section at the end
             echo "" >>"$CONFIG_FILE"
             echo "[flavor]" >>"$CONFIG_FILE"
-            echo 'dark  = "nocturnal"' >>"$CONFIG_FILE"
-            echo 'light = "nocturnal"' >>"$CONFIG_FILE"
+            echo 'dark  = "mistletoe"' >>"$CONFIG_FILE"
+            echo 'light = "mistletoe"' >>"$CONFIG_FILE"
         fi
     fi
     ;;
@@ -295,15 +295,15 @@ labwc)
 
 niri)
     CONFIG_FILE="$HOME/.config/niri/config.kdl"
-    INCLUDE_LINE='include "./nocturnal.kdl"'
+    INCLUDE_LINE='include "./mistletoe.kdl"'
 
     # Check if the config file exists.
     if [ ! -f "$CONFIG_FILE" ]; then
         mkdir -p "$(dirname "$CONFIG_FILE")"
         echo -e "\n$INCLUDE_LINE\n" >"$CONFIG_FILE"
     else
-        # Check if nocturnal include already exists (flexible: quotes, ./ prefix)
-        if grep -qE 'include\s+["'"'"'](\./)?nocturnal\.kdl["'"'"']' "$CONFIG_FILE"; then
+        # Check if mistletoe include already exists (flexible: quotes, ./ prefix)
+        if grep -qE 'include\s+["'"'"'](\./)?mistletoe\.kdl["'"'"']' "$CONFIG_FILE"; then
             : # Already included
         else
             # Add the include line to the end of the file
@@ -313,10 +313,10 @@ niri)
     ;;
 
 hyprland)
-    echo "🎨 Applying 'nocturnal' theme to Hyprland..."
+    echo "🎨 Applying 'mistletoe' theme to Hyprland..."
     CONFIG_DIR="$HOME/.config/hypr"
     CONFIG_FILE="$CONFIG_DIR/hyprland.conf"
-    THEME_FILE="$CONFIG_DIR/nocturnal/nocturnal-colors.conf"
+    THEME_FILE="$CONFIG_DIR/mistletoe/mistletoe-colors.conf"
 
     INCLUDE_LINE="source = $THEME_FILE"
 
@@ -325,7 +325,7 @@ hyprland)
         echo "Config file not found, creating $CONFIG_FILE..."
         mkdir -p "$(dirname "$CONFIG_FILE")"
         echo -e "\n$INCLUDE_LINE\n" >"$CONFIG_FILE"
-        echo "Created new config file with nocturnal theme."
+        echo "Created new config file with mistletoe theme."
     else
         if [ -L "$CONFIG_FILE" ] && [ ! -w "$CONFIG_FILE" ]; then
             echo "Detected read-only symlink, converting to local file..."
@@ -333,13 +333,13 @@ hyprland)
             chmod +w "$CONFIG_FILE"
         fi
 
-        # Check if nocturnal theme source already exists (flexible matching)
-        if grep -qE 'source\s*=\s*.*nocturnal.*\.conf' "$CONFIG_FILE"; then
+        # Check if mistletoe theme source already exists (flexible matching)
+        if grep -qE 'source\s*=\s*.*mistletoe.*\.conf' "$CONFIG_FILE"; then
             echo "Theme already included, skipping modification."
         else
             # Add the include line to the end of the file
             echo -e "\n$INCLUDE_LINE\n" >>"$CONFIG_FILE"
-            echo "✅ Added nocturnal theme include to config."
+            echo "✅ Added mistletoe theme include to config."
         fi
     fi
 
@@ -348,25 +348,25 @@ hyprland)
     ;;
 
 sway)
-    echo "🎨 Applying 'nocturnal' theme to Sway..."
+    echo "🎨 Applying 'mistletoe' theme to Sway..."
     CONFIG_DIR="$HOME/.config/sway"
     CONFIG_FILE="$CONFIG_DIR/config"
-    INCLUDE_LINE='include ~/.config/sway/nocturnal'
+    INCLUDE_LINE='include ~/.config/sway/mistletoe'
 
     # Check if the config file exists.
     if [ ! -f "$CONFIG_FILE" ]; then
         echo "Config file not found, creating $CONFIG_FILE..."
         mkdir -p "$(dirname "$CONFIG_FILE")"
         echo -e "\n$INCLUDE_LINE\n" >"$CONFIG_FILE"
-        echo "Created new config file with nocturnal theme."
+        echo "Created new config file with mistletoe theme."
     else
-        # Check if nocturnal include already exists (flexible matching)
-        if grep -qE 'include\s+.*nocturnal' "$CONFIG_FILE"; then
+        # Check if mistletoe include already exists (flexible matching)
+        if grep -qE 'include\s+.*mistletoe' "$CONFIG_FILE"; then
             echo "Theme already included, skipping modification."
         else
             # Add the include line to the end of the file
             echo -e "\n$INCLUDE_LINE\n" >>"$CONFIG_FILE"
-            echo "✅ Added nocturnal theme include to config."
+            echo "✅ Added mistletoe theme include to config."
         fi
     fi
 
@@ -375,25 +375,25 @@ sway)
     ;;
 
 scroll)
-    echo "Applying 'nocturnal' theme to Scroll..."
+    echo "Applying 'mistletoe' theme to Scroll..."
     CONFIG_DIR="$HOME/.config/scroll"
     CONFIG_FILE="$CONFIG_DIR/config"
-    INCLUDE_LINE='include ~/.config/scroll/nocturnal'
+    INCLUDE_LINE='include ~/.config/scroll/mistletoe'
 
     # Check if the config file exists.
     if [ ! -f "$CONFIG_FILE" ]; then
         echo "Config file not found, creating $CONFIG_FILE..."
         mkdir -p "$(dirname "$CONFIG_FILE")"
         echo -e "\n$INCLUDE_LINE\n" >"$CONFIG_FILE"
-        echo "Created new config file with nocturnal theme."
+        echo "Created new config file with mistletoe theme."
     else
-        # Check if nocturnal include already exists (flexible matching)
-        if grep -qE 'include\s+.*nocturnal' "$CONFIG_FILE"; then
+        # Check if mistletoe include already exists (flexible matching)
+        if grep -qE 'include\s+.*mistletoe' "$CONFIG_FILE"; then
             echo "Theme already included, skipping modification."
         else
             # Add the include line to the end of the file
             echo -e "\n$INCLUDE_LINE\n" >>"$CONFIG_FILE"
-            echo "Added nocturnal theme include to config."
+            echo "Added mistletoe theme include to config."
         fi
     fi
 
@@ -404,9 +404,9 @@ scroll)
 mango)
     CONFIG_DIR="$HOME/.config/mango"
     MAIN_CONFIG="$CONFIG_DIR/config.conf"
-    THEME_FILE="$CONFIG_DIR/nocturnal.conf"
+    THEME_FILE="$CONFIG_DIR/mistletoe.conf"
     BACKUP_FILE="$CONFIG_DIR/theme.conf.bak"
-    # This sources the nocturnal theme file
+    # This sources the mistletoe theme file
     SOURCE_LINE="source = $THEME_FILE"
 
     # Color variables that should be moved to theme file
@@ -440,10 +440,10 @@ mango)
         # Add source line to main config
         if [ -f "$MAIN_CONFIG" ]; then
             echo "" >>"$MAIN_CONFIG"
-            echo "# This sources the nocturnal theme" >>"$MAIN_CONFIG"
+            echo "# This sources the mistletoe theme" >>"$MAIN_CONFIG"
             echo -e "\n$SOURCE_LINE\n" >>"$MAIN_CONFIG"
         else
-            echo "# This sources the nocturnal theme" >"$MAIN_CONFIG"
+            echo "# This sources the mistletoe theme" >"$MAIN_CONFIG"
             echo -e "\n$SOURCE_LINE\n" >>"$MAIN_CONFIG"
         fi
     fi
@@ -460,14 +460,14 @@ btop)
     CONFIG_FILE="$HOME/.config/btop/btop.conf"
 
     if [ -f "$CONFIG_FILE" ]; then
-        # Check if theme is already set to nocturnal (flexible spacing)
-        if grep -qE '^color_theme\s*=\s*"nocturnal"' "$CONFIG_FILE"; then
+        # Check if theme is already set to mistletoe (flexible spacing)
+        if grep -qE '^color_theme\s*=\s*"mistletoe"' "$CONFIG_FILE"; then
             : # Already correct
         elif grep -qE '^color_theme\s*=' "$CONFIG_FILE"; then
             # Replace existing color_theme line in-place
-            sed -i -E 's/^color_theme\s*=.*/color_theme = "nocturnal"/' "$CONFIG_FILE"
+            sed -i -E 's/^color_theme\s*=.*/color_theme = "mistletoe"/' "$CONFIG_FILE"
         else
-            echo 'color_theme = "nocturnal"' >>"$CONFIG_FILE"
+            echo 'color_theme = "mistletoe"' >>"$CONFIG_FILE"
         fi
 
         if pgrep -x btop >/dev/null; then

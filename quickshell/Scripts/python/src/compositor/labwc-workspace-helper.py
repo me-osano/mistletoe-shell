@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LabWC Workspace Helper for Nocturnal Shell
+LabWC Workspace Helper for Mistletoe Shell
 
 This script connects to LabWC's ext-workspace-v1 protocol and outputs
 workspace state as JSON for the LabwcService to consume.
@@ -362,7 +362,7 @@ class LabwcWorkspaceClient:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='LabWC workspace helper for Nocturnal Shell'
+        description='LabWC workspace helper for Mistletoe Shell'
     )
     parser.add_argument(
         '--activate', '-a',

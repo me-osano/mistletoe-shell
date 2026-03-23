@@ -4,7 +4,7 @@ font-size = 12
 font-thicken = true
 
 # ── Appearance ────────────────────────────────────────────────────────
-theme = nocturnal
+theme = mistletoe
 background-opacity = 0.9
 background-blur-radius = 0
 

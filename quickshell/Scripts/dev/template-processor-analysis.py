@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Analyze Nocturnal's template-processor color extraction.
+Analyze Mistletoe's template-processor color extraction.
 
 Usage:
     ./template-processor-analysis.py <wallpaper_path>
@@ -288,7 +288,7 @@ def compare_m3_schemes(image_path: Path, has_matugen: bool) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Analyze Nocturnal template-processor color extraction"
+        description="Analyze Mistletoe template-processor color extraction"
     )
     parser.add_argument(
         "wallpaper",

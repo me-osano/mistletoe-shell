@@ -33,7 +33,7 @@ x = 1
 y = 1
 
 [general]
-import = ["~/.config/alacritty/themes/nocturnal.toml"]
+import = ["~/.config/alacritty/themes/mistletoe.toml"]
 live_config_reload = true
 
 [[keyboard.bindings]]

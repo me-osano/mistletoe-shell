@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Generate a registry.json from all color schemes in Assets/ColorScheme
-# Output format matches ~/Development/misc/nocturnal/nocturnal-colorschemes/registry.json
+# Output format matches ~/Development/misc/mistletoe/mistletoe-colorschemes/registry.json
 
 set -euo pipefail
 
