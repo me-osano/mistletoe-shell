@@ -12,9 +12,12 @@ PKGS=(
   qt6-wayland
   qt6-declarative
   qt6-tools
+  qt6-multimedia
+  qt5-graphicaleffects
   wl-clipboard
   brightnessctl
   wlsunset
+  matugen
   ddcutil
   power-profiles-daemon
   cava

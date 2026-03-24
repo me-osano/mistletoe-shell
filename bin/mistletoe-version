@@ -1,0 +1,2 @@
+#!/bin/bash
+cat $MISTLETOE_PATH/VERSION
